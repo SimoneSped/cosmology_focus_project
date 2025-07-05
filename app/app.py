@@ -2,6 +2,7 @@ import dash
 from dash import dcc, html, Output, Input
 import plotly.graph_objects as go
 import numpy as np
+import dash_bootstrap_components as dbc
 
 # Fixed parameters
 N_galaxies = 200
@@ -50,84 +51,221 @@ def make_ellipses(x, y, theta, e=ellipticity):
     return traces
 
 # Dash app
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.MINTY],  title="Galaxy Intrinsic Alignment")
 
 app.layout = html.Div([
-    html.H2("Interactive Galaxy Intrinsic Alignment + Lensing Shear"),
-    dcc.Graph(id='galaxy-plot'),
-    html.Div([
-        html.Label("Intrinsic Alignment Strength:"),
-        dcc.Slider(
-            id='ia-strength',
-            min=0,
-            max=1,
-            step=0.05,
-            value=0.0,
-            marks={0: '0', 0.5: '0.5', 1: '1'}
-        ),
-        html.Br(),
-        html.Label("Lensing Shear Strength:"),
-        dcc.Slider(
-            id='shear-strength',
-            min=0,
-            max=1,
-            step=0.05,
-            value=0.0,
-            marks={0: '0', 0.5: '0.5', 1: '1'}
-        ),
-    ], style={'width': '60%'}),
-    html.Div([
-        html.Label("Preferred Alignment Angle (degrees):"),
-        dcc.Slider(
-            id='preferred-angle',
-            min=0,
-            max=180,
-            step=5,
-            value=45,
-            marks={0: '0°', 45: '45°', 90: '90°', 135: '135°', 180: '180°'}
-        ),
-        html.Br(),
-        html.Label("Shear Direction (degrees):"),
-        dcc.Slider(
-            id='shear-angle',
-            min=0,
-            max=180,
-            step=5,
-            value=90,
-            marks={0: '0°', 45: '45°', 90: '90°', 135: '135°', 180: '180°'}
-        ),
-    ], style={'width': '60%'}),
-    dcc.Graph(id='histogram')
+    dbc.Row([
+        dbc.Col([
+            dcc.Markdown("""
+            # Interactive Galaxy Intrinsic Alignment
+            
+            By Simone Spedicato, 2025. [Source code here](https://github.com/SimoneSped/cosmology_focus_project).
+            """)
+        ], style={"margin":"1em"})
+    ]),
+    html.Hr(),
+    dbc.Row([
+        dbc.Col([
+            html.Label("Intrinsic Alignment Strength:", id="ia-label"),
+            dcc.Slider(
+                id='ia-strength',
+                min=0,
+                max=1,
+                step=0.05,
+                value=0.0,
+                marks={0: '0', 0.5: '0.5', 1: '1'}
+            ),
+            dbc.Tooltip(
+                "Controls how strongly galaxies tend to align toward the preferred angle.",
+                target="ia-label",
+                placement="right"
+            ),
+            html.Br(),
+            html.Label("Lensing Shear Strength:", id="lensing-label"),
+            dcc.Slider(
+                id='shear-strength',
+                min=0,
+                max=1,
+                step=0.05,
+                value=0.0,
+                marks={0: '0', 0.5: '0.5', 1: '1'}
+            ),
+            dbc.Tooltip(
+                "Strength of the simulated gravitational lensing distortion.",
+                target="lensing-label",
+                placement="right"
+            ),
+            html.Br(),
+            html.Label("Preferred Alignment Angle (degrees):", id="preferred-angle-label"),
+            dcc.Slider(
+                id='preferred-angle',
+                min=0,
+                max=180,
+                step=5,
+                value=45,
+                marks={0: '0°', 45: '45°', 90: '90°', 135: '135°', 180: '180°'}
+            ),
+            dbc.Tooltip(
+                "The angle toward which galaxies tend to align.",
+                target="preferred-angle-label",
+                placement="right"
+            ),
+            html.Br(),
+            html.Label("Shear Direction (degrees):", id="shear-label"),
+            dcc.Slider(
+                id='shear-angle',
+                min=0,
+                max=180,
+                step=5,
+                value=90,
+                marks={0: '0°', 45: '45°', 90: '90°', 135: '135°', 180: '180°'}
+            ),
+            dbc.Tooltip(
+                "The direction from which gravitational shear is applied.",
+                target="shear-label",
+                placement="right"
+            ),
+            html.Br(),
+            # dbc.Label("Number of Galaxies:"),
+            # dbc.Input(
+            #     id="num-galaxies",
+            #     type="number",
+            #     min=10,
+            #     max=5000,
+            #     step=10,
+            #     value=200,   # default number
+            #     debounce=True  # only triggers when user finishes typing or presses Enter
+            # ),
+            # html.Br(),
+            dbc.Accordion([
+                dbc.AccordionItem([
+                    dbc.Checklist(
+                        options=[
+                            {"label": "Overlay vectors", "value": "show_vectors"}
+                        ],
+                        value=[],
+                        id="vector-toggle",
+                        switch=True
+                    ),
+                    html.Br(),
+                    dbc.Label("Shear Pattern:"),
+                    dcc.Dropdown(
+                        id="shear-pattern",
+                        options=[
+                            {"label": "Uniform Shear", "value": "uniform"},
+                            {"label": "Radial Shear", "value": "radial"},
+                            {"label": "Tangential Shear", "value": "tangential"}
+                        ],
+                        value="uniform",
+                        clearable=False
+                    ),
+                ], title="Other Settings")
+            ], start_collapsed = True)
+        ], width=3, style={"margin":"1em"}),
+        dbc.Col([
+            dcc.Graph(id='galaxy-plot'),
+        ], width=4),
+        dbc.Col([
+            dcc.Graph(id='histogram'),
+        ], width=4),
+    ]),
 ])
 
 @app.callback(
     Output('galaxy-plot', 'figure'),
     Output('histogram', 'figure'),
-    Input('ia-strength', 'value'),
-    Input('shear-strength', 'value'),
-    Input('preferred-angle', 'value'),
-    Input('shear-angle', 'value')
+    [
+        Input("ia-strength", "value"),
+        Input("shear-strength", "value"),
+        Input("preferred-angle", "value"),
+        Input("shear-angle", "value"),
+        # Input("num-galaxies", "value"),
+        Input("vector-toggle", "value"),
+        Input("shear-pattern", "value")
+    ],
 )
-def update_plot(ia_strength, shear_strength, preferred_angle_deg, shear_angle_deg):
+# N = 200! 
+def update_plot(
+    ia_strength,
+    shear_strength,
+    preferred_angle_deg,
+    shear_angle_deg,
+    toggle_value,
+    shear_pattern
+):
+    # Convert angles to radians
     preferred_angle = np.deg2rad(preferred_angle_deg)
-    shear_angle = np.deg2rad(shear_angle_deg)
+    shear_angle_uniform = np.deg2rad(shear_angle_deg)
 
-    theta_ia = apply_intrinsic_alignment(theta_random, ia_strength, preferred_angle)
-    theta_all = apply_lensing_shear(theta_ia, shear_angle, shear_strength)
+    # Compute shear angles depending on the pattern
+    x_centered = x - 0.5
+    y_centered = y - 0.5
 
+    if shear_pattern == "uniform":
+        shear_angles = np.full(len(x), shear_angle_uniform)
+    elif shear_pattern == "radial":
+        shear_angles = np.arctan2(y_centered, x_centered) + np.pi/2
+    elif shear_pattern == "tangential":
+        shear_angles = np.arctan2(y_centered, x_centered)
+    else:
+        shear_angles = np.zeros(len(x))
+
+    # Intrinsic alignment component
+    intrinsic_offset = ia_strength * np.sin(2 * (preferred_angle - theta_random))
+
+    # Shear component (per-galaxy)
+    shear_offset = shear_strength * np.sin(2 * (shear_angles - theta_random))
+
+    # Combine all contributions
+    theta_all = theta_random + intrinsic_offset + shear_offset
+
+    # Generate ellipses
     ellipses = make_ellipses(x, y, theta_all)
 
     fig = go.Figure(ellipses)
     fig.update_layout(
-        width=600,
-        height=600,
+        width=550,
+        height=550,
         xaxis=dict(range=[0, field_size], showgrid=False, zeroline=False),
         yaxis=dict(range=[0, field_size], showgrid=False, zeroline=False),
         title=f"IA: {ia_strength:.2f} @ {preferred_angle_deg}°, Shear: {shear_strength:.2f} @ {shear_angle_deg}°",
-        margin=dict(l=10, r=10, t=40, b=10),
+        margin=dict(l=10, r=10, t=40, b=5),
     )
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
+    # if vectors are to be shown
+    show_vectors = "show_vectors" in toggle_value
+
+    if show_vectors:
+        # Length of the axis line (adjust as needed)
+        axis_length = 2.5
+
+        # Compute start and end points for each line
+        x_start = x - 0.5 * axis_length * np.cos(theta_all)
+        y_start = y - 0.5 * axis_length * np.sin(theta_all)
+
+        x_end = x + 0.5 * axis_length * np.cos(theta_all)
+        y_end = y + 0.5 * axis_length * np.sin(theta_all)
+
+        # Build line segments with None separators
+        x_lines = []
+        y_lines = []
+        for xs, ys, xe, ye in zip(x_start, y_start, x_end, y_end):
+            x_lines.extend([xs, xe, None])
+            y_lines.extend([ys, ye, None])
+
+        # Add the Scatter trace
+        fig.add_trace(
+            go.Scatter(
+                x=x_lines,
+                y=y_lines,
+                mode="lines",
+                line=dict(color="red", width=1),
+                showlegend=False
+            )
+        )
+
+    # Histogram
     angles_deg = np.degrees(theta_all) % 180  # wrap to [0,180)
     hist_fig = go.Figure()
     hist_fig.add_trace(go.Histogram(
@@ -138,8 +276,9 @@ def update_plot(ia_strength, shear_strength, preferred_angle_deg, shear_angle_de
     hist_fig.update_layout(
         title="Orientation Angle Histogram",
         xaxis_title="Angle (degrees)",
-        yaxis_title="Count",
-        bargap=0.1
+        # yaxis_title="Count",
+        bargap=0.1,
+        margin=dict(l=20, r=10, t=40, b=0),
     )
 
     return fig, hist_fig
