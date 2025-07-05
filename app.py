@@ -53,8 +53,6 @@ def make_ellipses(x, y, theta, e=ellipticity):
 # Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.MINTY],  title="Galaxy Intrinsic Alignment")
 
-server = app.server
-
 app.layout = html.Div([
     dbc.Row([
         dbc.Col([
@@ -186,7 +184,6 @@ app.layout = html.Div([
         Input("shear-pattern", "value")
     ],
 )
-# N = 200! 
 def update_plot(
     ia_strength,
     shear_strength,
@@ -284,6 +281,8 @@ def update_plot(
     )
 
     return fig, hist_fig
+
+server = app.server
 
 if __name__ == '__main__':
     app.run(debug=True)
