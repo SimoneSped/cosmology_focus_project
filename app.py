@@ -53,11 +53,13 @@ def make_ellipses(x, y, theta, e=ellipticity):
 # Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.MINTY],  title="Galaxy Intrinsic Alignment")
 
+server = app.server
+
 app.layout = html.Div([
     dbc.Row([
         dbc.Col([
             dcc.Markdown("""
-            # Interactive Galaxy Intrinsic Alignment
+            # Galaxy Intrinsic Alignment Simulator
             
             By Simone Spedicato, 2025. [Source code here](https://github.com/SimoneSped/cosmology_focus_project).
             """)
